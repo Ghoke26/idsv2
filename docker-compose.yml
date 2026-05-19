@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+
+  # ============================================
+  # Container 1: Server Flask (Dashboard + API)
+  # ============================================
+  ids-server:
+    build: ./server
+    container_name: ids-server
+    restart: always
+    ports:
+      - "5000:5000"       # Dashboard web
+    volumes:
+      - db-data:/app/data # Simpan SQLite permanen
+    environment:
+      - PORT=5000
+    networks:
+      - ids-network
+    depends_on:
+      - ids-honeypot
+
+  # ============================================
+  # Container 2: Honeypot (Port tipuan IoT)
+  # ============================================
+  ids-honeypot:
+    build: ./honeypot
+    container_name: ids-honeypot
+    restart: always
+    ports:
+      - "1883:1883"   # MQTT tipuan
+      - "5683:5683"   # CoAP tipuan
+      - "23:23"       # Telnet tipuan
+    environment:
+      - SERVER_URL=http://ids-server:5000/log
+    networks:
+      - ids-network
+
+# ============================================
+# Volume untuk database permanen
+# ============================================
+volumes:
+  db-data:
+
+# ============================================
+# Network internal antar container
+# ============================================
+networks:
+  ids-network:
+    driver: bridge
